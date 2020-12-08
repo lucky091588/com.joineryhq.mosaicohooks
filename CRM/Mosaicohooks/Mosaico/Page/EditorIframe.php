@@ -10,19 +10,6 @@ class CRM_Mosaicohooks_Mosaico_Page_EditorIframe extends CRM_Mosaico_Page_Editor
   /**
    * Modify return value of parent:: method.
    */
-  protected function createMosaicoConfig() {
-    $config = parent::createMosaicoConfig();
-
-    CRM_Utils_Hook::singleton()->invoke(['config'], $config, $null, $null,
-      $null, $null, $null,
-      'civicrm_mosaicoConfigAlter'
-    );
-    return $config;
-  }
-
-  /**
-   * Modify return value of parent:: method.
-   */
   protected function getScriptUrls() {
     $scriptUrls = parent::getScriptUrls();
 
