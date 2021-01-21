@@ -1,43 +1,68 @@
-# com.joineryhq.mosaicohooks
+# CiviCRM: Mosaico Hooks
 
-![Screenshot](/images/screenshot.png)
-
-(*FIXME: In one or two paragraphs, describe what the extension does and why one would download it. *)
+Provides hooks `hook_civicrm_mosaicoStyleUrlsAlter` and `hook_civicrm_mosaicoScriptUrlsAlter` to alter relevant assets in the Mosaico interface. May be a dependency for extensions that need to do this. For example, [Campaign Advocacy](https://github.com/twomice/civicrm-campaignadvocacy) uses these hooks to inject CSS and JavaScript files for custom token handlng in the Mosaico composer.
 
 The extension is licensed under [GPL-3.0](LICENSE.txt).
 
 ## Requirements
 
 * PHP v7.0+
-* CiviCRM (*FIXME: Version number*)
-
-## Installation (Web UI)
-
-This extension has not yet been published for installation via the web UI.
-
-## Installation (CLI, Zip)
-
-Sysadmins and developers may download the `.zip` file for this extension and
-install it with the command-line tool [cv](https://github.com/civicrm/cv).
-
-```bash
-cd <extension-dir>
-cv dl com.joineryhq.mosaicohooks@https://github.com/FIXME/com.joineryhq.mosaicohooks/archive/master.zip
-```
-
-## Installation (CLI, Git)
-
-Sysadmins and developers may clone the [Git](https://en.wikipedia.org/wiki/Git) repo for this extension and
-install it with the command-line tool [cv](https://github.com/civicrm/cv).
-
-```bash
-git clone https://github.com/FIXME/com.joineryhq.mosaicohooks.git
-cv en mosaicohooks
-```
+* CiviCRM 5.0
 
 ## Usage
 
-(* FIXME: Where would a new user navigate to get started? What changes would they see? *)
+### `hook_civicrm_mosaicoStyleUrlsAlter(&$styleUrls)`
+`$styleUrls` is an array of URLs for stylesheets to be loaded in the Mosaico composer interface. Alter (add, remove, change) array elements as needed.
+
+Example from  [Campaign Advocacy](https://github.com/twomice/civicrm-campaignadvocacy):
+
+```php
+function campaignadv_civicrm_mosaicoStyleUrlsAlter(&$styleUrls) {
+  $res = CRM_Core_Resources::singleton();
+
+  // Build a list of core resources. We'll exclude certain jquery-ui theme styles,
+  // but otherwise, we'll add all of these resources to the page, so our pop-ups
+  // and other custom token features will work properly.
+  $coreResourceList = $res->coreResourceList('html-header');
+  $coreResourceList = array_filter($coreResourceList, 'is_string');
+  foreach ($coreResourceList as $item) {
+    if (
+      FALSE !== strpos($item, 'css')
+      // Exclude jquery ui theme styles, which conflict with Mosaico styles.
+      && FALSE === strpos($item, '/jquery-ui/themes/')
+    ) {
+      if ($res->isFullyFormedUrl($item)) {
+        $itemUrl = $item;
+      }
+      else {
+        $item = CRM_Core_Resources::filterMinify('civicrm', $item);
+        $itemUrl = $res->getUrl('civicrm', $item, TRUE);
+      }
+      $styleUrls[] = $itemUrl;
+    }
+  }
+
+  // Include our own abridged styles from jquery-ui 'smoothness' theme, as
+  // required for our jquery-ui dialog, but which don't conflict with Mosaico.
+  $styleUrls[] = $res->getUrl('campaignadv', 'css/jquery-ui-smoothness-partial.css', TRUE);
+}
+```
+
+### `hook_civicrm_mosaicoScriptUrlsAlter(&$scriptUrls)`
+`$scriptUrls` is an array of URLs for JavaScript files to be loaded in the Mosaico composer interface. Alter (add, remove, change) array elements as needed.
+
+Example from  [Campaign Advocacy](https://github.com/twomice/civicrm-campaignadvocacy):
+
+```php
+function campaignadv_civicrm_mosaicoScriptUrlsAlter(&$scriptUrls) {
+  $res = CRM_Core_Resources::singleton();
+
+  // Include our own JS.
+  $url = $res->addCacheCode(CRM_Utils_System::url('civicrm/campaignadv/mosaico-js', '', TRUE, NULL, NULL, NULL, NULL));
+  $scriptUrls[] = $url;
+}
+```
+
 
 ## Support
 ![screenshot](/images/joinery-logo.png)
